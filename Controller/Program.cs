@@ -53,7 +53,7 @@ namespace Controller
                 {
                     sendEp.Send(new Switch() { IsOn = state },
                         ctx => { ctx.Headers.Set(EncryptedMessageSerializer.EncryptionKeyHeader, Guid.NewGuid().ToString()); });
-                    Console.WriteLine($"Zmiana stanu na {(state ? "Wlaczony" : "Wylaczony")}");
+                    Console.WriteLine($"\nZmiana stanu na {(state ? "Wlaczony" : "Wylaczony")}");
                 }
 
                 shouldSend = false;
