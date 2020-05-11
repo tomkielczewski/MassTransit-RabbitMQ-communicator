@@ -3,18 +3,42 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using GreenPipes;
 using MassTransit;
 using Messages;
 
 namespace Publisher
 {
+    class Inbox : IConsumer<IAnswerA>, IConsumer<IAnswerB>
+    {
+        public Task Consume(ConsumeContext<IAnswerA> ctx)
+        {
+            return Task.Run(() =>
+            {
+                var shouldThrowException = new Random();
+                if (shouldThrowException.Next(0, 100) < 34)
+                    throw new Exception();
+                Console.WriteLine($"Otrzymano odpowiedz od: {ctx.Message.Who}");
+            });
+        }
+        public Task Consume(ConsumeContext<IAnswerB> ctx)
+        {
+            return Task.Run(() =>
+            {
+                var shouldThrowException = new Random();
+                if (shouldThrowException.Next(0, 100) < 34)
+                    throw new Exception();
+                Console.WriteLine($"Otrzymano odpowiedz od: {ctx.Message.Who}");
+            });
+        }
+    }
+
     class Switch : IConsumer<ISwitch>
     {
         public bool isOn { get; private set; } = true;
 
         public Task Consume(ConsumeContext<ISwitch> ctx)
         {
-            //ctx.RespondAsync<Messages.IAnswer>(new Messages.IAnswer(){});
             isOn = ctx.Message.IsOn;
             return Task.Run(() =>
             {
@@ -36,6 +60,7 @@ namespace Publisher
             var password = "GMBxr4gWlaGe9w2lMT9MquPJfutT4F9r";
 
             var switcher = new Switch();
+            var inbox = new Inbox();
 
             var busSwitch = Bus.Factory.CreateUsingRabbitMq(sbc =>
             {
@@ -51,6 +76,10 @@ namespace Publisher
             {
                 var host = sbc.Host(new Uri(addr),
                     h => { h.Username(userName); h.Password(password); });
+                sbc.ReceiveEndpoint(host, "inbox", ep => {
+                    ep.Instance(inbox);
+                    ep.UseRetry(r => { r.Immediate(5); });
+                });
             });
             busPubl.Start();
             busSwitch.Start();
@@ -69,16 +98,6 @@ namespace Publisher
                         counter += 1;
                         System.Threading.Thread.Sleep(1000);
                     }
-                    /*
-                    if(!switcher.isOn)
-                    {
-                        Console.WriteLine("Aby zamknąć naciśnij Esc.");
-                        if(Console.ReadKey().Key == ConsoleKey.Escape)
-                        {
-                            endProgram = true;
-                        }
-                    }
-                    */
                 }
             });
             t.Wait();

@@ -14,7 +14,7 @@ namespace SubscriberB
         {
             public string Who { get; set; }
         }
-        class Inbox : IConsumer<IPubl>
+        class Inbox : IConsumer<IPubl>, IConsumer<Fault<IAnswerB>>
         {
             public Task Consume(ConsumeContext<IPubl> ctx)
             {
@@ -28,7 +28,19 @@ namespace SubscriberB
                     Console.WriteLine($"Otrzymano wiadomosc: {ctx.Message.Number} {(ctx.Message.Number % 3 == 0 ? "odpowiedziano" : "")}");
                 });
             }
+
+            public Task Consume(ConsumeContext<Fault<IAnswerB>> ctx)
+            {
+                return Task.Run(() =>
+                {
+                    foreach (var e in ctx.Message.Exceptions)
+                    {
+                        Console.WriteLine($"\n----------Wyjątek od {e.Message} {ctx.Message.Message.Who}\n");
+                    }
+                });
+            }
         }
+
         static void Main(string[] args)
         {
             var addr = "amqp://pwpnrbye:GMBxr4gWlaGe9w2lMT9MquPJfutT4F9r@kangaroo.rmq.cloudamqp.com/pwpnrbye";

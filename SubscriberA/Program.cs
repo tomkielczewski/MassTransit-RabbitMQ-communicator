@@ -14,7 +14,7 @@ namespace SubscriberA
         {
             public string Who { get; set; }
         }
-        class Inbox : IConsumer<IPubl>
+        class Inbox : IConsumer<IPubl>, IConsumer<Fault<IAnswerA>>
         {
             public Task Consume(ConsumeContext<IPubl> ctx)
             {
@@ -26,6 +26,16 @@ namespace SubscriberA
 
                     }
                     Console.WriteLine($"Otrzymano wiadomosc: {ctx.Message.Number} {(ctx.Message.Number % 2 == 0 ? "odpowiedziano" : "")}");
+                });
+            }
+            public Task Consume(ConsumeContext<Fault<IAnswerA>> ctx)
+            {
+                return Task.Run(() =>
+                {
+                    foreach (var e in ctx.Message.Exceptions)
+                    {
+                        Console.WriteLine($"\n----------Wyjątek od {e.Message} {ctx.Message.Message.Who}\n");
+                    }
                 });
             }
         }
