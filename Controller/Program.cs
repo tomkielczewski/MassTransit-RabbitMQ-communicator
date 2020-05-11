@@ -9,6 +9,25 @@ using Messages;
 
 namespace Controller
 {
+    public class PassKey : SymmetricKey
+    {
+        public byte[] IV { get; set; }
+        public byte[] Key { get; set; }
+    }
+
+    public class Provider : ISymmetricKeyProvider
+    {
+        private string k;
+        public Provider(string _k) { k = _k; }
+        public bool TryGetKey(string keyId, out SymmetricKey key)
+        {
+            var sk = new PassKey();
+            sk.IV = Encoding.ASCII.GetBytes(keyId.Substring(0, 16));
+            sk.Key = Encoding.ASCII.GetBytes(k);
+            key = sk;
+            return true;
+        }
+    }
     class Switch : ISwitch  //Ustaw
     {
         public bool IsOn { get; set; }    //dziala
@@ -27,6 +46,9 @@ namespace Controller
             {
                 var host = sbc.Host(new Uri(addr),
                 h => { h.Username(userName); h.Password(password); });
+                sbc.UseEncryptedSerializer(
+                    new AesCryptoStreamProvider(
+                        new Provider("16562516562516562516562516562516"), "1656251656251656"));
             });
             bus.Start();
             Console.WriteLine("Kontroler wystartował");
